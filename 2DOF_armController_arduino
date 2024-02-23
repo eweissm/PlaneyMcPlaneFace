@@ -1,0 +1,135 @@
+#include <Servo.h>
+
+#define HallEffectPin 3
+#define ServoPin 7
+
+#define puls 8
+#define dir 9
+#define enable 10
+
+const float stepsPerRevolution = 6400;  // Define number of steps per revolution
+const float gearRatio = 2;              // joint 1 gear ratio-- rotation of stepper:joint 1
+const float StepperSpeed = 25;          // degrees per second
+const int delayPerDegree_servo = 25;    // delay for each degree moved by servo in ms
+
+Servo joint2;  //create servo object for joint 2
+
+int theta1 = 0;
+int theta2 = 0;
+
+float joint1CurrentTheta = theta1;
+float joint1Steps = 0;
+
+String x_str;
+String y_str;
+
+float stepsPerSecond = (gearRatio * stepsPerRevolution * StepperSpeed) / 360.;
+float delayPerStep_float = (1000) / stepsPerSecond;  // delay in ms
+long delayPerStep = int(delayPerStep_float);
+
+void setup() {
+  Serial.begin(9600);
+
+  joint2.attach(ServoPin);
+
+  pinMode(HallEffectPin, INPUT);
+
+  pinMode(puls, OUTPUT);
+  pinMode(dir, OUTPUT);
+  pinMode(enable, OUTPUT);
+
+  digitalWrite(enable, LOW);  //disable stepper
+  digitalWrite(dir, LOW);
+
+  ZeroJointOne();
+}
+
+void loop() {
+
+  // get joint angles
+  if (Serial.available()) {
+    x_str = Serial.readStringUntil('A');
+    y_str = Serial.readStringUntil('B');
+
+    Serial.end();
+    Serial.begin(9600);
+
+    theta1 = x_str.toInt();
+    theta2 = y_str.toInt();
+    joint1Steps = gearRatio * (theta1 - joint1CurrentTheta);      //degrees
+    joint1Steps = floor(joint1Steps * stepsPerRevolution / 360);  //steps
+
+    float ExpectedTime = max(abs(theta1 - joint1CurrentTheta) / StepperSpeed, abs(theta2 - joint2.read()) * delayPerStep / 1000);  // estimate move time
+    Serial.println(max(ExpectedTime, 0.1));
+
+    MoveJoints(joint1Steps, theta2);
+
+    joint1CurrentTheta = theta1;
+    joint1Steps = 0;
+    Serial.print('y');
+  }
+  //Serial.println(digitalRead(HallEffectPin));
+}
+
+void ZeroJointOne() {
+  //Serial.println("Zeroing Joint 1...");
+  MoveJoints(0, 65);
+  delay(100);
+  float SearchStepLength = -(stepsPerRevolution * gearRatio) / 360;  //subdived 1 roatation into 360 degrees
+  int counter = 0;
+
+  while (digitalRead(HallEffectPin) == 1 && counter < 720) {
+    MoveJoints(int(SearchStepLength), 65);
+    counter++;
+  }
+
+  if (digitalRead(HallEffectPin) == 0) {
+    //Serial.println("Zero found");
+    MoveJoints(118 * int(SearchStepLength), 90);
+  } else {
+    // Serial.println("Zero not found");
+  }
+}
+
+void MoveJoints(int joint1_steps, int joint2_angle) {
+
+  int incrementer = 1;
+
+  if (joint1_steps > 0) {
+    digitalWrite(dir, HIGH);
+    incrementer = 1;
+  } else {
+    digitalWrite(dir, LOW);
+    incrementer = -1;
+  }
+
+  int Joint2Steps = int(abs(joint2_angle - joint2.read()));
+
+  int StepperStepsPerServoSteps = 25; //default "speed"
+
+ // makes sure that stepper and servo terminate their moves approximatetly at the same time
+  if (abs(joint1_steps / Joint2Steps) > 1) {
+    StepperStepsPerServoSteps = int(ceil(abs(joint1_steps / Joint2Steps)));
+  }
+
+  int currentStep = 0;
+  int servoStepCounter = 0;
+
+  while (joint2_angle != joint2.read() || currentStep != joint1_steps) {
+
+    if (joint2_angle > joint2.read() && servoStepCounter % StepperStepsPerServoSteps == 0) {  // mover servo
+      joint2.write(joint2.read() + 1);
+    } else if (joint2_angle < joint2.read() && servoStepCounter % StepperStepsPerServoSteps == 0) {
+      joint2.write(joint2.read() - 1);
+    }
+
+    if (currentStep != joint1_steps) {  // move stepper
+      digitalWrite(puls, HIGH);
+      currentStep = currentStep + incrementer;
+    }
+
+    delay(delayPerStep);
+    digitalWrite(puls, LOW);
+    servoStepCounter++;
+  }
+}
