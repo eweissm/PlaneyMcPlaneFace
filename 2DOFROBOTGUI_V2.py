@@ -23,6 +23,7 @@ def plot(x_coord, y_coord):
     plot1.grid()
 
     plot1.plot(x_coord, y_coord, marker="o", markersize=10 )
+    plot1.plot(pathX, pathY, color='blue', linestyle='dashed')
 
     # creating the Tkinter canvas
     # containing the Matplotlib figure
@@ -46,6 +47,8 @@ def startupPlot():
     plot1.set_xlim([-300, 300])
     plot1.set_ylim([-300, 300])
     plot1.grid()
+
+    plot1.plot(pathX, pathY, color='blue', linestyle='dashed')
 
     # creating the Tkinter canvas
     # containing the Matplotlib figure
@@ -76,7 +79,7 @@ def set_coordinates_state(x_coord, y_coord):
     ser.write(bytes('B', 'UTF-8'))
 
 #set path defaults
-ActivePath=0;
+ActivePath=0
 pathX = [5, 5, 5, 5, 5, 5, 3, 1, -1, -3, -5, -5, -5, -5, -5, -5, -3, -1, 1, 3, 5]
 pathY = [-5, -3, -1, 1, 3, 5, 5, 5, 5, 5, 5, 3, 1, -1, -3, -5, -5, -5, -5, -5, -5]
 def ChangeSelectPathButton():
