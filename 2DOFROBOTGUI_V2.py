@@ -55,16 +55,6 @@ def startupPlot():
     # placing the canvas on the Tkinter window
     canvas.get_tk_widget().place(relx=0, rely=0)
 
-#normalize angle between 0 and 2*pi
-def NormalizeAngle(angle):
-    if angle > 2*np.pi:
-        solution = angle - abs(np.floor(angle / (2*np.pi)) * 2 * np.pi)
-    elif angle < 0:
-        solution = angle + abs(np.floor(angle / (2*np.pi)) * 2 * np.pi)
-    else:
-        solution = angle
-    return solution
-
 def StartPathFollow():
     global pathX
     global pathY
@@ -76,12 +66,13 @@ def StartPathFollow():
 #when update button is pressed--> take entered coordinates and caclulate new coordinates, then update graph, then send to serial
 def set_coordinates_state(x_coord, y_coord):
 
+    print(x_coord, y_coord)
     plot(x_coord, y_coord)
 
     #send serial data to arduino
     ser.write(bytes( str(x_coord), 'UTF-8'))
     ser.write(bytes('A', 'UTF-8'))
-    ser.write(bytes( str(y_coord-90), 'UTF-8'))
+    ser.write(bytes( str(y_coord), 'UTF-8'))
     ser.write(bytes('B', 'UTF-8'))
 
 #set path defaults
@@ -92,8 +83,6 @@ def ChangeSelectPathButton():
     global ActivePath
     global pathX
     global pathY
-    global L1
-    global L2
 
     numCases = 4
 
@@ -125,7 +114,7 @@ def ChangeSelectPathButton():
     #         pathX = [ 5,  5,  5, 5, 5, 5, 3, 1, -1, -3, -5 , -5 , -5, -5, -5 , -5, -3, -1, 1, 3, 5]
     #         pathY = [-5, -3, -1, 1, 3, 5, 5, 5 , 5,  5,  5,   3,   1, -1, -3,  -5, -5, -5,-5,-5,-5]
 
-    startupPlot(L1, L2)
+    startupPlot()
 
 #set up serial comms--------------------------------------------------------------------------------------------------------------------------------------------------
 ser = serial.Serial('com3', 9600) #create Serial Object
