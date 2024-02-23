@@ -91,28 +91,27 @@ def ChangeSelectPathButton():
     else:
         ActivePath=ActivePath+1
 
-    # match ActivePath:
-    #     case 0: #rectangle
-    #         pathX = [ 5,  5,  5, 5, 5, 5, 3, 1, -1, -3, -5 , -5 , -5, -5, -5 , -5, -3, -1, 1, 3, 5]
-    #         pathY = [-5, -3, -1, 1, 3, 5, 5, 5 , 5,  5,  5,   3,   1, -1, -3,  -5, -5, -5,-5,-5,-5]
-    #     case 1: #involute of circle
-    #         u = np.linspace(0, 6.5 * np.pi, 150)
-    #         c = .45
-    #         pathX = (c * (np.cos(u) + u * np.sin(u)))
-    #         pathY = c * (np.sin(u) - u * np.cos(u))
-    #     case 2:  # Heart
-    #         u = np.linspace(0,  2 * np.pi, 100)
-    #         c = .3
-    #         pathX = (6*c*np.sin(u))**3
-    #         pathY = 13*c*np.cos(u)-5*c*np.cos(2*u)-2*c*np.cos(3*u)-c*np.cos(4*u)
-    #     case 3:  # lemniscate
-    #         u = np.linspace(0, 2 * np.pi, 50)
-    #         c = 5
-    #         pathX = (c * np.cos(u))
-    #         pathY = c * np.sin(2 * u)
-    #     case default: #rectangle
-    #         pathX = [ 5,  5,  5, 5, 5, 5, 3, 1, -1, -3, -5 , -5 , -5, -5, -5 , -5, -3, -1, 1, 3, 5]
-    #         pathY = [-5, -3, -1, 1, 3, 5, 5, 5 , 5,  5,  5,   3,   1, -1, -3,  -5, -5, -5,-5,-5,-5]
+    if ActivePath == 0: #rectangle
+        pathX = [ 5,  5,  5, 5, 5, 5, 3, 1, -1, -3, -5 , -5 , -5, -5, -5 , -5, -3, -1, 1, 3, 5]
+        pathY = [-5, -3, -1, 1, 3, 5, 5, 5 , 5,  5,  5,   3,   1, -1, -3,  -5, -5, -5,-5,-5,-5]
+    elif ActivePath == 1: #involute of circle
+        u = np.linspace(0, 6.5 * np.pi, 150)
+        c = .45
+        pathX = (c * (np.cos(u) + u * np.sin(u)))
+        pathY = c * (np.sin(u) - u * np.cos(u))
+    elif ActivePath == 2:  # Heart
+        u = np.linspace(0,  2 * np.pi, 100)
+        c = .3
+        pathX = (6*c*np.sin(u))**3
+        pathY = 13*c*np.cos(u)-5*c*np.cos(2*u)-2*c*np.cos(3*u)-c*np.cos(4*u)
+    elif ActivePath == 3:  # lemniscate
+        u = np.linspace(0, 2 * np.pi, 50)
+        c = 5
+        pathX = (c * np.cos(u))
+        pathY = c * np.sin(2 * u)
+    else: #rectangle
+        pathX = [ 5,  5,  5, 5, 5, 5, 3, 1, -1, -3, -5 , -5 , -5, -5, -5 , -5, -3, -1, 1, 3, 5]
+        pathY = [-5, -3, -1, 1, 3, 5, 5, 5 , 5,  5,  5,   3,   1, -1, -3,  -5, -5, -5,-5,-5,-5]
 
     startupPlot()
 
