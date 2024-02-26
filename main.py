@@ -263,10 +263,11 @@ def ChangeSelectPathButton():
 
     elif ActivePath == 6: #circle
         numLoops = 1
-        diameter = 100;
+        diameter = 100
         u = np.linspace(0, numLoops * 2 * np.pi, 400)
         pathX = diameter * np.sin(u) + 150
         pathY = diameter * np.cos(u) + 150
+        print(pathY)
 
     elif ActivePath == 7: #Gcode input
         tempX, tempY = GcodeConverter(r"C:\Users\Ericw\Desktop\squareSpiral.gc")
@@ -284,7 +285,7 @@ def ChangeSelectPathButton():
 
 
 # set up serial comms---------------------------------------------------------------------------------------------------
-ser = serial.Serial('com3', 9600, timeout=10) # create Serial Object, baud = 9600, read times out after 10s
+ser = serial.Serial('com4', 9600, timeout=10) # create Serial Object, baud = 9600, read times out after 10s
 time.sleep(3)  # delay 3 seconds to allow serial com to get established
 
 # Build GUI------------------------------------------------------------------------------------------------------------
