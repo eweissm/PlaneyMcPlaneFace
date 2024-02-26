@@ -236,21 +236,17 @@ def set_coordinates_state(x_coord, y_coord):
         end = time.time()
         print("Difference between expected time and actual time: " + str(end - start - ExpectedTime))
 
-
 # set path defaults
 ActivePath = 0
-pathX = [10, 20, 20, 10, 10]
-pathY = [10, 10, 20, 20, 10]
-
+pathX = [100, 200, 200, 100, 100]
+pathY = [100, 100, 200, 200, 100]
 
 def ChangeSelectPathButton():
     global ActivePath
     global pathX
     global pathY
-    global L1
-    global L2
 
-    numCases = 9
+    numCases = 7
 
     if ActivePath >= numCases-1:
         ActivePath=0
@@ -259,35 +255,35 @@ def ChangeSelectPathButton():
 
     if ActivePath==0:
          # rectangle
-         pathX = [10, 20, 20, 10, 10]
-         pathY = [10, 10, 20, 20, 10]
+         pathX = [100, 200, 200, 100, 100]
+         pathY = [100, 100, 200, 200, 100]
     elif ActivePath==1:
         u = np.linspace(0, 6.5 * np.pi, 150)
-        c = .45
-        pathX = (c * (np.cos(u) + u * np.sin(u)))
-        pathY = (c * (np.sin(u) - u * np.cos(u)))
+        c = 4
+        pathX = (c * (np.cos(u) + u * np.sin(u)))+150
+        pathY = (c * (np.sin(u) - u * np.cos(u)))+150
     elif ActivePath == 2:
 
         u = np.linspace(0,  2 * np.pi, 100)
-        c = .3
-        pathX = (7*c*np.sin(u))**3
-        pathY = (15*c*np.cos(u)-5*c*np.cos(2*u)-2*c*np.cos(3*u)-c*np.cos(4*u))*1.5
+        c = 2
+        pathX = (2*c*np.sin(u))**3 + 150
+        pathY = (15*c*np.cos(u)-5*c*np.cos(2*u)-2*c*np.cos(3*u)-c*np.cos(4*u))*2 + 150
 
     elif ActivePath == 3:  # lemniscate
         u = np.linspace(0, 2 * np.pi, 50)
-        c = 5
-        pathX = (c * np.cos(u))
-        pathY = c * np.sin(2 * u)
+        c = 100
+        pathX = (c * np.cos(u)) +150
+        pathY = c * np.sin(2 * u) +150
     elif ActivePath ==4:
      # Lisajous curves
         u = np.linspace(0, 15 * np.pi, 400)
-        pathX = (8 * np.sin(u*.9))
-        pathY = 8 * np.sin(u)
+        pathX = 8*(8 * np.sin(u*.9)) +150
+        pathY = 8*8 * np.sin(u) +150
     elif ActivePath == 5:
 
         u = np.linspace(0, 2 * np.pi, 400)
-        pathX = 7 * np.sin(7*u)
-        pathY = 7 * np.cos(5*u)
+        pathX = 80 * np.sin(7*u)+150
+        pathY = 80 * np.cos(5*u) +150
 
     elif ActivePath == 6: #Gcode input
         tempX, tempY = GcodeConverter(r"C:\Users\Ericw\Desktop\squareSpiral.gc")
@@ -297,36 +293,9 @@ def ChangeSelectPathButton():
         pathX = tempX
         pathY = tempY
 
-    elif ActivePath == 7:
-         # Spiral Squares
-        numberOfLoops = 8
-        radiusSizeChange = 1
-
-        pathX = [0]
-        pathY = [0]
-
-        for i in range(numberOfLoops):
-            pathX.append(radiusSizeChange*(i+1))
-            pathY.append(pathY[len(pathY)-1])
-
-            pathX.append(radiusSizeChange*(i+1))
-            pathY.append(radiusSizeChange*(i+1))
-
-            pathX.append(-radiusSizeChange*(i+1))
-            pathY.append(radiusSizeChange*(i+1))
-
-            pathX.append(-radiusSizeChange*(i+1))
-            pathY.append(-radiusSizeChange*(i+1))
-
-    elif ActivePath == 8:
-
-        u = np.linspace(0, 30 * np.pi, 800)
-        pathX = 1.4*(np.cos(u) + 0.05*u*np.sin(3*u))
-        pathY = 1.4*(np.sin(2*u) + 0.05*u*np.cos(3*u))
-
     else: #rectangle
-        pathX = [10, 20, 20, 10, 10]
-        pathY = [10, 10, 20, 20, 10]
+        pathX = [100, 200, 200, 100, 100]
+        pathY = [100, 100, 200, 200, 100]
 
     startupPlot()
 
