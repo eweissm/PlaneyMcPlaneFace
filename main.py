@@ -180,7 +180,7 @@ def set_coordinates_state(x_coord, y_coord):
 
         try:
             # convert expected time to float (minimum time is 0.005s)
-            ExpectedTime = max(float(ExpectedTime_string), 0.1)
+            ExpectedTime = max(float(ExpectedTime_string), 0.005)
         except ValueError:
             ExpectedTime = 0.1
 
@@ -222,7 +222,7 @@ def ChangeSelectPathButton():
     global pathX
     global pathY
 
-    numCases = 7
+    numCases = 8
 
     if ActivePath >= numCases-1:
         ActivePath=0
@@ -261,7 +261,14 @@ def ChangeSelectPathButton():
         pathX = 80 * np.sin(7*u)+150
         pathY = 80 * np.cos(5*u) +150
 
-    elif ActivePath == 6: #Gcode input
+    elif ActivePath == 6: #circle
+        numLoops = 1
+        diameter = 100;
+        u = np.linspace(0, numLoops * 2 * np.pi, 400)
+        pathX = diameter * np.sin(u) + 150
+        pathY = diameter * np.cos(u) + 150
+
+    elif ActivePath == 7: #Gcode input
         tempX, tempY = GcodeConverter(r"C:\Users\Ericw\Desktop\squareSpiral.gc")
         tempX = np.array(tempX)/15- 7.5
         tempY = np.array(tempY)/15 - 7.5
