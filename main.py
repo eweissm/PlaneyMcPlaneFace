@@ -5,7 +5,6 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib import pyplot as plt
 import numpy as np
-import progressbar
 import re
 import math
 
@@ -134,8 +133,6 @@ def StartPathFollow():
 
     set_coordinates_state(pathX, pathY)
 
-
-
 prev_X_and_Y = [0,0]
 # when update button is pressed--> take entered coordinates and calculate new coordinates, then update graph, then send
 # to serial
@@ -152,46 +149,42 @@ def set_coordinates_state(x_coord, y_coord):
 
     # Pre-Calculate inverse Kinematics calculation
     print("Calculating Angles...")
-    with progressbar.ProgressBar(max_value=NumEntries) as bar:
-        for i in range(NumEntries):
-            if NumEntries > 1:
-                thisXCoord = x_coord[i]
-                thisYCoord = y_coord[i]
+
+    for i in range(NumEntries):
+        if NumEntries > 1:
+            thisXCoord = x_coord[i]
+            thisYCoord = y_coord[i]
+        else:
+            thisXCoord = x_coord
+            thisYCoord = y_coord
+
+        # In order to allow the arm to move in approximately straight lines between 2 points, we will discretize the
+        # path taken between two point such that no 2 points along the path are greater than 1 cm
+
+        #Length of straight line from current coords to target coords
+        PathLength = np.sqrt((thisXCoord-prev_X_and_Y[0])**2 + (thisYCoord-prev_X_and_Y[1])**2)
+
+        numberOfPathSteps = 1
+
+        # Find X and Y coordinates along the path
+        if thisXCoord != prev_X_and_Y[0]:
+            Xsteps = np.linspace(prev_X_and_Y[0], thisXCoord, numberOfPathSteps)
+            if prev_X_and_Y[0] < thisXCoord:
+                Ysteps = np.interp(Xsteps, [prev_X_and_Y[0], thisXCoord], [prev_X_and_Y[1], thisYCoord])
             else:
-                thisXCoord = x_coord
-                thisYCoord = y_coord
-
-            # In order to allow the arm to move in approximately straight lines between 2 points, we will discretize the
-            # path taken between two point such that no 2 points along the path are greater than 1 cm
-
-            #Length of straight line from current coords to target coords
-            PathLength = np.sqrt((thisXCoord-prev_X_and_Y[0])**2 + (thisYCoord-prev_X_and_Y[1])**2)
-
-            numberOfPathSteps = math.ceil(PathLength/1)
-
-            # Find X and Y coordinates along the path
-            if thisXCoord != prev_X_and_Y[0]:
-                Xsteps = np.linspace(prev_X_and_Y[0], thisXCoord, numberOfPathSteps)
-                if prev_X_and_Y[0] < thisXCoord:
-                    Ysteps = np.interp(Xsteps, [prev_X_and_Y[0], thisXCoord], [prev_X_and_Y[1], thisYCoord])
-                else:
-                    Ysteps = np.interp(Xsteps, [thisXCoord, prev_X_and_Y[0]], [thisYCoord, prev_X_and_Y[1]])
+                Ysteps = np.interp(Xsteps, [thisXCoord, prev_X_and_Y[0]], [thisYCoord, prev_X_and_Y[1]])
+        else:
+            Ysteps = np.linspace(prev_X_and_Y[1], thisYCoord, numberOfPathSteps)
+            if prev_X_and_Y[1] < thisYCoord:
+                Xsteps = np.interp(Ysteps, [prev_X_and_Y[1], thisYCoord], [prev_X_and_Y[0], thisXCoord])
             else:
-                Ysteps = np.linspace(prev_X_and_Y[1], thisYCoord, numberOfPathSteps)
-                if prev_X_and_Y[1] < thisYCoord:
-                    Xsteps = np.interp(Ysteps, [prev_X_and_Y[1], thisYCoord], [prev_X_and_Y[0], thisXCoord])
-                else:
-                    Xsteps = np.interp(Ysteps, [thisYCoord, prev_X_and_Y[1]], [thisXCoord, prev_X_and_Y[0]])
+                Xsteps = np.interp(Ysteps, [thisYCoord, prev_X_and_Y[1]], [thisXCoord, prev_X_and_Y[0]])
 
-            prev_X_and_Y = [thisXCoord, thisYCoord]  # update prev_X_and_Y
+        prev_X_and_Y = [thisXCoord, thisYCoord]  # update prev_X_and_Y
 
-            for j in range(len(Xsteps)):
-                # generate and plot the graph
-                plot(thisXCoord, thisYCoord);
-
-            bar.update(i)
-
-    print("Done calculating path")
+        for j in range(len(Xsteps)):
+            # generate and plot the graph
+            plot(thisXCoord, thisYCoord);
 
     # Run through the angles
 
@@ -266,8 +259,8 @@ def ChangeSelectPathButton():
 
     if ActivePath==0:
          # rectangle
-        pathX = [ 5,  5,  5, 5, 5, 5, 3, 1, -1, -3, -5 , -5 , -5, -5, -5 , -5, -3, -1, 1, 3, 5]
-        pathY = [-5, -3, -1, 1, 3, 5, 5, 5 , 5,  5,  5,   3,   1, -1, -3,  -5, -5, -5,-5,-5,-5]
+         pathX = [10, 20, 20, 10, 10]
+         pathY = [10, 10, 20, 20, 10]
     elif ActivePath==1:
         u = np.linspace(0, 6.5 * np.pi, 150)
         c = .45
@@ -338,7 +331,7 @@ def ChangeSelectPathButton():
     startupPlot()
 
 # set up serial comms---------------------------------------------------------------------------------------------------
-ser = serial.Serial('com4', 9600, timeout=10) # create Serial Object, baud = 9600, read times out after 10s
+ser = serial.Serial('com3', 9600, timeout=10) # create Serial Object, baud = 9600, read times out after 10s
 time.sleep(3)  # delay 3 seconds to allow serial com to get established
 
 # Build GUI------------------------------------------------------------------------------------------------------------
