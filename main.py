@@ -263,11 +263,10 @@ def ChangeSelectPathButton():
 
     elif ActivePath == 6: #circle
         numLoops = 1
-        diameter = 100
+        diameter = 75
         u = np.linspace(0, numLoops * 2 * np.pi, 400)
         pathX = diameter * np.sin(u) + 150
         pathY = diameter * np.cos(u) + 150
-        print(pathY)
 
     elif ActivePath == 7: #Gcode input
         tempX, tempY = GcodeConverter(r"C:\Users\Ericw\Desktop\squareSpiral.gc")
@@ -316,8 +315,8 @@ y_coord_entry = tk.Entry(EntryFrame)
 y_coord_entry.pack(side='top', ipadx=0, padx=0, pady=0)
 
 # set initial coords to zero
-x_coord_entry.insert(0,0)
-y_coord_entry.insert(0,0)
+x_coord_entry.insert(0,10)
+y_coord_entry.insert(0,10)
 
 UpdateCoordsButton = tk.Button(EntryFrame,
                                    text="Update Coordinates",
