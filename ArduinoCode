@@ -1,0 +1,194 @@
+#include <Servo.h>
+
+#define Ypuls 5
+#define Ydir 6
+#define Yenable 7
+
+
+#define Xpuls 8
+#define Xdir 9
+#define Xenable 10
+
+#define YLimitPin 12
+#define XLimitPin 11
+
+const float stepsPerRevolution = 800;  // Define number of steps per revolution
+const float StepperSpeed = 10;         // mm per second
+float steps_Per_mm = stepsPerRevolution * 0.25;
+
+int X = 0;
+int Y = 0;
+
+float CurrentX = 0;
+float XSteps = 0;
+float CurrentY = 0;
+float YSteps = 0;
+
+String x_str;
+String y_str;
+
+float stepsPerSecond = StepperSpeed * steps_Per_mm;
+float delayPerStep_float = 1000000 / stepsPerSecond;  // delay in ms
+long delayPerStep = int(delayPerStep_float);
+
+void setup() {
+
+  Serial.begin(9600);
+
+  pinMode(Xpuls, OUTPUT);
+  pinMode(Xdir, OUTPUT);
+  pinMode(Xenable, OUTPUT);
+
+  pinMode(Ypuls, OUTPUT);
+  pinMode(Ydir, OUTPUT);
+  pinMode(Yenable, OUTPUT);
+
+  pinMode(XLimitPin, INPUT_PULLUP);
+  pinMode(YLimitPin, INPUT_PULLUP);
+
+  digitalWrite(Xenable, HIGH);  //enable stepper
+  digitalWrite(Yenable, HIGH);  //enable stepper
+  digitalWrite(Xdir, LOW);
+  digitalWrite(Ydir, LOW);
+
+  ZeroJoints();
+}
+
+void loop() {
+
+  // get joint angles
+  if (Serial.available()) {
+
+    x_str = Serial.readStringUntil('A');
+    y_str = Serial.readStringUntil('B');
+
+    Serial.end();
+    Serial.begin(9600);
+
+    X = x_str.toInt();
+    Y = y_str.toInt();
+
+    XSteps = (X - CurrentX);                //mm
+    XSteps = floor(XSteps * steps_Per_mm);  //steps
+
+    YSteps = (Y - CurrentY);                //mm
+    YSteps = floor(YSteps * steps_Per_mm);  //steps
+
+    float ExpectedTime = sqrt(pow((X - CurrentX), 2) + pow((Y - CurrentY), 2)) / StepperSpeed;  // estimate move time
+    Serial.println(max(ExpectedTime, 0.005));
+
+    MoveJoints(XSteps, YSteps);
+    Serial.print('y');
+    CurrentX = X;
+    CurrentY = Y;
+
+    XSteps = 0;
+    YSteps = 0;
+    
+  }
+}
+
+void ZeroJoints() {
+  digitalWrite(Xdir, LOW);
+  digitalWrite(Ydir, LOW);
+
+  digitalWrite(Xenable, LOW);  //enable stepper
+  digitalWrite(Yenable, LOW);  //enable stepper
+
+  while (digitalRead(YLimitPin) == HIGH || digitalRead(XLimitPin) == HIGH) {
+
+    if (digitalRead(XLimitPin) == HIGH) {
+      digitalWrite(Xpuls, HIGH);
+    }
+
+    if (digitalRead(YLimitPin) == HIGH) {
+      digitalWrite(Ypuls, HIGH);
+    }
+
+    delayMicroseconds(delayPerStep);
+    digitalWrite(Xpuls, LOW);
+    digitalWrite(Ypuls, LOW);
+    delayMicroseconds(delayPerStep);
+  }
+  
+  digitalWrite(Xdir, HIGH);
+  digitalWrite(Ydir, HIGH);
+  for (int i = 0; i < 5 * steps_Per_mm; i++) {
+    digitalWrite(Ypuls, HIGH);
+    digitalWrite(Xpuls, HIGH);
+    delayMicroseconds(delayPerStep);
+    digitalWrite(Xpuls, LOW);
+    digitalWrite(Ypuls, LOW);
+    delayMicroseconds(delayPerStep);
+        
+  }
+
+
+  digitalWrite(Xenable, HIGH);  //disable stepper
+  digitalWrite(Yenable, HIGH);  //disable stepper
+}
+
+void MoveJoints(int XSteps, int YSteps) {
+
+  digitalWrite(Xenable, LOW);  //enable stepper
+  digitalWrite(Yenable, LOW);  //enable stepper
+
+  int Xincrementer = 1;
+  int Yincrementer = 1;
+
+  if (XSteps > 0) {
+    digitalWrite(Xdir, HIGH);
+    Xincrementer = 1;
+  } else {
+    digitalWrite(Xdir, LOW);
+    Xincrementer = -1;
+  }
+
+  if (YSteps > 0) {
+    digitalWrite(Ydir, HIGH);
+    Yincrementer = 1;
+  } else {
+    digitalWrite(Ydir, LOW);
+    Yincrementer = -1;
+  }
+
+  // values used to determine how many steps to take for each joint
+  int X_ratio_Value = 1;
+  int Y_ratio_Value = 1;
+
+  // makes sure that both servos terminate their moves approximatetly at the same time
+  if (abs(XSteps) > abs(YSteps)) {
+    X_ratio_Value = 1;
+    Y_ratio_Value = int(ceil(abs(XSteps / YSteps)));
+  } else {
+    X_ratio_Value = int(ceil(abs(YSteps / XSteps)));
+    Y_ratio_Value = 1;
+  }
+
+  int currentXStep = 0;
+  int currentYStep = 0;
+  int loopCounter = 0;
+
+  while ((currentXStep != XSteps || currentYStep != YSteps) && digitalRead(YLimitPin) == HIGH && digitalRead(XLimitPin) == HIGH) {
+
+    if ((currentXStep != XSteps) && (loopCounter % X_ratio_Value == 0)) {  // move stepper
+      digitalWrite(Xpuls, HIGH);
+      currentXStep = currentXStep + Xincrementer;
+    }
+
+    if ((currentYStep != YSteps) && (loopCounter % Y_ratio_Value == 0)) {  // move stepper
+      digitalWrite(Ypuls, HIGH);
+      currentYStep = currentYStep + Yincrementer;
+    }
+
+
+    delayMicroseconds(delayPerStep / 2);
+    digitalWrite(Xpuls, LOW);
+    digitalWrite(Ypuls, LOW);
+    delayMicroseconds(delayPerStep / 2);
+    loopCounter++;
+  }
+
+  digitalWrite(Xenable, HIGH);  //disable stepper
+  digitalWrite(Yenable, HIGH);  //disable stepper
+}
