@@ -61,7 +61,7 @@ void loop() {
 
     x_str = Serial.readStringUntil('A');
     y_str = Serial.readStringUntil('B');
-
+    
     Serial.end();
     Serial.begin(9600);
 
@@ -70,6 +70,7 @@ void loop() {
 
     XSteps = (X - CurrentX);                //mm
     XSteps = floor(XSteps * steps_Per_mm);  //steps
+    Serial.println(XSteps);
 
     YSteps = (Y - CurrentY);                //mm
     YSteps = floor(YSteps * steps_Per_mm);  //steps
@@ -77,7 +78,7 @@ void loop() {
     float ExpectedTime = sqrt(pow((X - CurrentX), 2) + pow((Y - CurrentY), 2)) / StepperSpeed;  // estimate move time
     Serial.println(max(ExpectedTime, 0.005));
 
-    MoveJoints(XSteps, YSteps);
+    MoveJoints(long(XSteps), long(YSteps));
     Serial.print('y');
     CurrentX = X;
     CurrentY = Y;
@@ -113,22 +114,25 @@ void ZeroJoints() {
   
   digitalWrite(Xdir, HIGH);
   digitalWrite(Ydir, HIGH);
-  for (int i = 0; i < 5 * steps_Per_mm; i++) {
+  for (int i = 0; i < 10 * steps_Per_mm; i++) {
     digitalWrite(Ypuls, HIGH);
     digitalWrite(Xpuls, HIGH);
-    delayMicroseconds(delayPerStep);
+    delayMicroseconds(delayPerStep/2);
     digitalWrite(Xpuls, LOW);
     digitalWrite(Ypuls, LOW);
-    delayMicroseconds(delayPerStep);
+    delayMicroseconds(delayPerStep/2);
         
   }
 
 
   digitalWrite(Xenable, HIGH);  //disable stepper
   digitalWrite(Yenable, HIGH);  //disable stepper
+
+  CurrentX = 10;
+  CurrentY = 10;
 }
 
-void MoveJoints(int XSteps, int YSteps) {
+void MoveJoints(long XSteps, long YSteps) {
 
   digitalWrite(Xenable, LOW);  //enable stepper
   digitalWrite(Yenable, LOW);  //enable stepper
@@ -165,9 +169,9 @@ void MoveJoints(int XSteps, int YSteps) {
     Y_ratio_Value = 1;
   }
 
-  int currentXStep = 0;
-  int currentYStep = 0;
-  int loopCounter = 0;
+  long currentXStep = 0;
+  long currentYStep = 0;
+  long loopCounter = 0;
 
   while ((currentXStep != XSteps || currentYStep != YSteps) && digitalRead(YLimitPin) == HIGH && digitalRead(XLimitPin) == HIGH) {
 
