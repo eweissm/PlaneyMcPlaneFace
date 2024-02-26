@@ -139,6 +139,9 @@ prev_X_and_Y = [0,0]
 def set_coordinates_state(x_coord, y_coord):
     global prev_X_and_Y  # Previous X and Y coordinates
 
+    XCoords = []
+    YCoords = []
+
     try:
         NumEntries = len(x_coord)
     # handle list / array case
@@ -147,54 +150,27 @@ def set_coordinates_state(x_coord, y_coord):
 
     ser.reset_input_buffer()  # clear input buffer
 
-    # Pre-Calculate inverse Kinematics calculation
-    print("Calculating Angles...")
-
     for i in range(NumEntries):
         if NumEntries > 1:
-            thisXCoord = x_coord[i]
-            thisYCoord = y_coord[i]
+            XCoords.append(x_coord[i])
+            YCoords.append(y_coord[i])
+
         else:
-            thisXCoord = x_coord
-            thisYCoord = y_coord
+            XCoords.append(x_coord)
+            YCoords.append(y_coord)
 
-        # In order to allow the arm to move in approximately straight lines between 2 points, we will discretize the
-        # path taken between two point such that no 2 points along the path are greater than 1 cm
 
-        #Length of straight line from current coords to target coords
-        PathLength = np.sqrt((thisXCoord-prev_X_and_Y[0])**2 + (thisYCoord-prev_X_and_Y[1])**2)
-
-        numberOfPathSteps = 1
-
-        # Find X and Y coordinates along the path
-        if thisXCoord != prev_X_and_Y[0]:
-            Xsteps = np.linspace(prev_X_and_Y[0], thisXCoord, numberOfPathSteps)
-            if prev_X_and_Y[0] < thisXCoord:
-                Ysteps = np.interp(Xsteps, [prev_X_and_Y[0], thisXCoord], [prev_X_and_Y[1], thisYCoord])
-            else:
-                Ysteps = np.interp(Xsteps, [thisXCoord, prev_X_and_Y[0]], [thisYCoord, prev_X_and_Y[1]])
-        else:
-            Ysteps = np.linspace(prev_X_and_Y[1], thisYCoord, numberOfPathSteps)
-            if prev_X_and_Y[1] < thisYCoord:
-                Xsteps = np.interp(Ysteps, [prev_X_and_Y[1], thisYCoord], [prev_X_and_Y[0], thisXCoord])
-            else:
-                Xsteps = np.interp(Ysteps, [thisYCoord, prev_X_and_Y[1]], [thisXCoord, prev_X_and_Y[0]])
-
-        prev_X_and_Y = [thisXCoord, thisYCoord]  # update prev_X_and_Y
-
-        for j in range(len(Xsteps)):
-            # generate and plot the graph
-            plot(thisXCoord, thisYCoord);
+    plot(XCoords[-1], YCoords[-1])
 
     # Run through the angles
 
-    for i in range(len(Ysteps)):
+    for i in range(NumEntries):
         start = time.time()
 
         # send serial data to arduino
-        ser.write(bytes(str(Xsteps[i]), 'UTF-8'))
+        ser.write(bytes(str(XCoords[i]), 'UTF-8'))
         ser.write(bytes('A', 'UTF-8'))
-        ser.write(bytes(str(Ysteps[i]), 'UTF-8'))
+        ser.write(bytes(str(YCoords[i]), 'UTF-8'))
         ser.write(bytes('B', 'UTF-8'))
 
         # get expected move time from arduino
