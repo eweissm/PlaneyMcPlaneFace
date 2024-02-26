@@ -5,59 +5,19 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib import pyplot as plt
 import numpy as np
-import scipy.optimize
 import progressbar
 import re
 import math
 
 FileName = r"C:\Users\Ericw\Desktop\topSecretedata.csv"
 
-L1 = 10
-L2 = 10
 # calculate the angles using inverse kinematics
 theta0 = [0, 0]
 prevTheta1 = 0
 
 
-def calculate_joint_angles(x, y, L1, L2):
-    global theta0
-    global ErrorFlag
-    global counter
-    global prevTheta1  # previous solution to theta1
-
-    counter = 0
-    ErrorFlag = True
-
-    while ErrorFlag and counter<5:
-
-        solution,infodict, ier, msg = scipy.optimize.fsolve(func, theta0, args=(tuple((x, y, L1, L2))), full_output=1)
-
-        # normalize angles
-        solution[1] = NormalizeAngle(solution[1])
-
-        if solution[1] > 3*np.pi/2 or solution[1] < np.pi/2 or ier != 1 or abs(solution[0]-prevTheta1) > 2*np.pi:
-
-            counter = counter + 1
-            rng = np.random.default_rng(12345)
-            rFloat = np.pi*(rng.random(2)-.5)
-            theta0 = [theta0[0]+rFloat[0], theta0[1]+rFloat[1]]
-
-        else:
-            ErrorFlag = False
-            prevTheta1 = solution[0]
-
-
-    if ErrorFlag:
-        print("Error: Angles out of bounds")
-        theta0 = [np.pi / 2, np.pi / 2]
-    else:
-        theta0 = solution
-
-    return solution
-
-
 # generate and plot the graph
-def plot(x_coord, y_coord, theta, L1, L2):
+def plot(x_coord, y_coord):
     global pathX
     global pathY
 
@@ -68,14 +28,9 @@ def plot(x_coord, y_coord, theta, L1, L2):
     plot1 = fig.add_subplot(111)
 
     # set limits for graphs
-    plot1.set_xlim([-(L1+L2+2), (L1+L2+2)])
-    plot1.set_ylim([-(L1+L2+2), (L1+L2+2)])
+    plot1.set_xlim([0, 300])
+    plot1.set_ylim([0, 300])
     plot1.grid()
-
-    # plotting work space
-    x, y = generate_semicircle(0, 0, np.sqrt(L1**2+L2**2), 0.01)
-    plot1.plot(x, y, color='black', linestyle='dashed')
-    plot1.plot(-x, y, color='black', linestyle='dashed')
 
     # plotting path
     plot1.plot(pathX, pathY, color='blue', linestyle='dashed')
@@ -83,9 +38,6 @@ def plot(x_coord, y_coord, theta, L1, L2):
     # plotting the arm
     plot1.plot(0, 0, marker="o", markersize=20)
     plot1.plot(x_coord, y_coord, marker="o", markersize=10)
-    plot1.plot(L1*np.cos(theta[0]), L1*np.sin(theta[0]), marker="o", markersize=20)
-    plot1.plot([0, L1*np.cos(theta[0])], [0, L1*np.sin(theta[0])])
-    plot1.plot([L1 * np.cos(theta[0]), x_coord], [L1 * np.sin(theta[0]), y_coord])
 
     # creating the Tkinter canvas
     # containing the Matplotlib figure
@@ -132,7 +84,7 @@ def GcodeConverter(fileName):
     return x, y
 
 
-def startupPlot(L1, L2):
+def startupPlot():
     global pathX
     global pathY
 
@@ -143,14 +95,9 @@ def startupPlot(L1, L2):
     plot1 = fig.add_subplot(111)
 
     # set limits for graphs
-    plot1.set_xlim([-(L1 + L2 + 2), (L1 + L2 + 2)])
-    plot1.set_ylim([-(L1 + L2 + 2), (L1 + L2 + 2)])
+    plot1.set_xlim([0, 300])
+    plot1.set_ylim([0, 300])
     plot1.grid()
-
-    # plotting work space
-    x, y = generate_semicircle(0, 0, np.sqrt(L1**2+L2**2), 0.01)
-    plot1.plot(x, y, color='black', linestyle='dashed')
-    plot1.plot(-x, y, color='black', linestyle='dashed')
 
     # plotting path
     plot1.plot(pathX, pathY, color='blue', linestyle='dashed')
@@ -162,18 +109,6 @@ def startupPlot(L1, L2):
 
     # placing the canvas on the Tkinter window
     canvas.get_tk_widget().place(relx=0, rely=0)
-
-
-# normalize angle between 0 and 2*pi
-def NormalizeAngle(angle):
-    if angle > 2*np.pi:
-        solution = angle - abs(np.floor(angle / (2*np.pi)) * 2 * np.pi)
-    elif angle < 0:
-        solution = angle + abs(np.floor(angle / (2*np.pi)) * 2 * np.pi)
-    else:
-        solution = angle
-    return solution
-
 
 def generate_semicircle(center_x, center_y, radius, stepsize=0.1):
     """
@@ -205,9 +140,6 @@ prev_X_and_Y = [0,0]
 # when update button is pressed--> take entered coordinates and calculate new coordinates, then update graph, then send
 # to serial
 def set_coordinates_state(x_coord, y_coord):
-    global theta  # angles of joints 1 and 2
-    global L1
-    global L2
     global prev_X_and_Y  # Previous X and Y coordinates
 
     try:
@@ -215,13 +147,6 @@ def set_coordinates_state(x_coord, y_coord):
     # handle list / array case
     except TypeError:  # oops, was a float
         NumEntries = 1
-
-    # define arm lengths
-    L1 = 10
-    L2 = 10
-
-    theta1_deg = []
-    theta2_deg = []
 
     ser.reset_input_buffer()  # clear input buffer
 
@@ -261,83 +186,68 @@ def set_coordinates_state(x_coord, y_coord):
             prev_X_and_Y = [thisXCoord, thisYCoord]  # update prev_X_and_Y
 
             for j in range(len(Xsteps)):
-
-
-                theta = calculate_joint_angles(Xsteps[j], Ysteps[j], L1, L2)
-                if not ErrorFlag:
-                    # generate and plot the graph
-                    plot(thisXCoord, thisYCoord, theta, L1, L2)
-                    theta1_deg.append(int(theta[0] * 180 / np.pi))
-                    theta2_deg.append(int(theta[1] * 180 / np.pi))
-                else:
-                    print("Failed to Calculate Coordinate: "+str(i))
-                    break
+                # generate and plot the graph
+                plot(thisXCoord, thisYCoord);
 
             bar.update(i)
 
-    print("Done Calculating Angles")
-
+    print("Done calculating path")
 
     # Run through the angles
-    if not ErrorFlag:
-        for i in range(len(theta1_deg)):
 
-            start = time.time()
+    for i in range(len(Ysteps)):
+        start = time.time()
 
-            # send serial data to arduino
-            ser.write(bytes(str(theta1_deg[i]), 'UTF-8'))
-            ser.write(bytes('A', 'UTF-8'))
-            ser.write(bytes(str(theta2_deg[i]-90), 'UTF-8'))
-            ser.write(bytes('B', 'UTF-8'))
+        # send serial data to arduino
+        ser.write(bytes(str(Xsteps[i]), 'UTF-8'))
+        ser.write(bytes('A', 'UTF-8'))
+        ser.write(bytes(str(Ysteps[i]), 'UTF-8'))
+        ser.write(bytes('B', 'UTF-8'))
 
-            # get expected move time from arduino
-            ExpectedTime_bytes = ser.readline()
-            ExpectedTime_string = ExpectedTime_bytes.decode("utf-8")
-            print("ExpectedTime: " + ExpectedTime_string)
+        # get expected move time from arduino
+        ExpectedTime_bytes = ser.readline()
+        ExpectedTime_string = ExpectedTime_bytes.decode("utf-8")
+        print("ExpectedTime: " + ExpectedTime_string)
 
-            try:
-                # convert expected time to float (minimum time is 0.005s)
-                ExpectedTime = max(float(ExpectedTime_string), 0.1)
-            except ValueError:
-                ExpectedTime = 0.1
+        try:
+            # convert expected time to float (minimum time is 0.005s)
+            ExpectedTime = max(float(ExpectedTime_string), 0.1)
+        except ValueError:
+            ExpectedTime = 0.1
 
-            ser.reset_input_buffer()  # clear input buffer
+        ser.reset_input_buffer()  # clear input buffer
 
-            # if we get a 'y' from arduino, we move on, otherwise we will wait 0.5 sec. We will repeat this 5 times.
-            # After which, if we still do not have confirmation, we will print to the monitor that there was a problem
-            # and move on
+        # if we get a 'y' from arduino, we move on, otherwise we will wait 0.5 sec. We will repeat this 5 times.
+        # After which, if we still do not have confirmation, we will print to the monitor that there was a problem
+        # and move on
 
-            DidMoveWork = False
+        DidMoveWork = False
 
-            ArduinoMessage = ''
+        ArduinoMessage = ''
 
-            MoveStartTime = time.time()
+        MoveStartTime = time.time()
 
-            while time.time()-MoveStartTime < ExpectedTime*4 and not DidMoveWork:
-                if ser.inWaiting():
-                    ArduinoMessage = ser.read(1)  # read one bit from buffer
-                    #print(ArduinoMessage)
+        while time.time()-MoveStartTime < ExpectedTime*4 and not DidMoveWork:
+            if ser.inWaiting():
+                ArduinoMessage = ser.read(1)  # read one bit from buffer
+                #print(ArduinoMessage)
 
-                if ArduinoMessage == b'y':
-                    DidMoveWork = True
-                    print("Move was successful")
+            if ArduinoMessage == b'y':
+                DidMoveWork = True
+                print("Move was successful")
 
-            if not DidMoveWork:
-                print("Move was not successful")
+        if not DidMoveWork:
+            print("Move was not successful")
 
-            ser.reset_input_buffer()  # clear input buffer
-            end = time.time()
-            print("Difference between expected time and actual time: " + str(end - start - ExpectedTime))
-
-
-def func(angles, x, y, L1, L2):
-    return [L1*np.cos(angles[0])+L2*(np.cos(angles[1])*np.cos(angles[0])-np.sin(angles[1])*np.sin(angles[0]))-x, L1*np.sin(angles[0])+L2*(np.cos(angles[1])*np.sin(angles[0])+np.sin(angles[1])*np.cos(angles[0]))-y]
+        ser.reset_input_buffer()  # clear input buffer
+        end = time.time()
+        print("Difference between expected time and actual time: " + str(end - start - ExpectedTime))
 
 
 # set path defaults
 ActivePath = 0
-pathX = [5, 5, 5, 5, 5, 5, 3, 1, -1, -3, -5, -5, -5, -5, -5, -5, -3, -1, 1, 3, 5]
-pathY = [-5, -3, -1, 1, 3, 5, 5, 5, 5, 5, 5, 3, 1, -1, -3, -5, -5, -5, -5, -5, -5]
+pathX = [10, 20, 20, 10, 10]
+pathY = [10, 10, 20, 20, 10]
 
 
 def ChangeSelectPathButton():
@@ -354,69 +264,78 @@ def ChangeSelectPathButton():
     else:
         ActivePath=ActivePath+1
 
-    match ActivePath:
-        case 0:  # rectangle
-            pathX = [ 5,  5,  5, 5, 5, 5, 3, 1, -1, -3, -5 , -5 , -5, -5, -5 , -5, -3, -1, 1, 3, 5]
-            pathY = [-5, -3, -1, 1, 3, 5, 5, 5 , 5,  5,  5,   3,   1, -1, -3,  -5, -5, -5,-5,-5,-5]
-        case 1:  # involute of circle
-            u = np.linspace(0, 6.5 * np.pi, 150)
-            c = .45
-            pathX = (c * (np.cos(u) + u * np.sin(u)))
-            pathY = (c * (np.sin(u) - u * np.cos(u)))
-        case 2: # Heart
-            u = np.linspace(0,  2 * np.pi, 100)
-            c = .3
-            pathX = (7*c*np.sin(u))**3
-            pathY = (15*c*np.cos(u)-5*c*np.cos(2*u)-2*c*np.cos(3*u)-c*np.cos(4*u))*1.5
-        case 3:  # lemniscate
-            u = np.linspace(0, 2 * np.pi, 50)
-            c = 5
-            pathX = (c * np.cos(u))
-            pathY = c * np.sin(2 * u)
-        case 4:  # Lisajous curves
-            u = np.linspace(0, 15 * np.pi, 400)
-            pathX = (8 * np.sin(u*.9))
-            pathY = 8 * np.sin(u)
-        case 5:
-            u = np.linspace(0, 2 * np.pi, 400)
-            pathX = 7 * np.sin(7*u)
-            pathY = 7 * np.cos(5*u)
-        case 6: #Gcode input
-            tempX, tempY = GcodeConverter(r"C:\Users\Ericw\Desktop\squareSpiral.gc")
-            tempX = np.array(tempX)/15- 7.5
-            tempY = np.array(tempY)/15 - 7.5
+    if ActivePath==0:
+         # rectangle
+        pathX = [ 5,  5,  5, 5, 5, 5, 3, 1, -1, -3, -5 , -5 , -5, -5, -5 , -5, -3, -1, 1, 3, 5]
+        pathY = [-5, -3, -1, 1, 3, 5, 5, 5 , 5,  5,  5,   3,   1, -1, -3,  -5, -5, -5,-5,-5,-5]
+    elif ActivePath==1:
+        u = np.linspace(0, 6.5 * np.pi, 150)
+        c = .45
+        pathX = (c * (np.cos(u) + u * np.sin(u)))
+        pathY = (c * (np.sin(u) - u * np.cos(u)))
+    elif ActivePath == 2:
 
-            pathX = tempX
-            pathY = tempY
-        case 7:  # Spiral Squares
-            numberOfLoops = 8
-            radiusSizeChange = 1
+        u = np.linspace(0,  2 * np.pi, 100)
+        c = .3
+        pathX = (7*c*np.sin(u))**3
+        pathY = (15*c*np.cos(u)-5*c*np.cos(2*u)-2*c*np.cos(3*u)-c*np.cos(4*u))*1.5
 
-            pathX = [0]
-            pathY = [0]
+    elif ActivePath == 3:  # lemniscate
+        u = np.linspace(0, 2 * np.pi, 50)
+        c = 5
+        pathX = (c * np.cos(u))
+        pathY = c * np.sin(2 * u)
+    elif ActivePath ==4:
+     # Lisajous curves
+        u = np.linspace(0, 15 * np.pi, 400)
+        pathX = (8 * np.sin(u*.9))
+        pathY = 8 * np.sin(u)
+    elif ActivePath == 5:
 
-            for i in range(numberOfLoops):
-                pathX.append(radiusSizeChange*(i+1))
-                pathY.append(pathY[len(pathY)-1])
+        u = np.linspace(0, 2 * np.pi, 400)
+        pathX = 7 * np.sin(7*u)
+        pathY = 7 * np.cos(5*u)
 
-                pathX.append(radiusSizeChange*(i+1))
-                pathY.append(radiusSizeChange*(i+1))
+    elif ActivePath == 6: #Gcode input
+        tempX, tempY = GcodeConverter(r"C:\Users\Ericw\Desktop\squareSpiral.gc")
+        tempX = np.array(tempX)/15- 7.5
+        tempY = np.array(tempY)/15 - 7.5
 
-                pathX.append(-radiusSizeChange*(i+1))
-                pathY.append(radiusSizeChange*(i+1))
+        pathX = tempX
+        pathY = tempY
 
-                pathX.append(-radiusSizeChange*(i+1))
-                pathY.append(-radiusSizeChange*(i+1))
-        case 8: # modified lemniscate
-            u = np.linspace(0, 30 * np.pi, 800)
-            pathX = 1.4*(np.cos(u) + 0.05*u*np.sin(3*u))
-            pathY = 1.4*(np.sin(2*u) + 0.05*u*np.cos(3*u))
+    elif ActivePath == 7:
+         # Spiral Squares
+        numberOfLoops = 8
+        radiusSizeChange = 1
 
-        case default: #rectangle
-            pathX = [ 5,  5,  5, 5, 5, 5, 3, 1, -1, -3, -5 , -5 , -5, -5, -5 , -5, -3, -1, 1, 3, 5]
-            pathY = [-5, -3, -1, 1, 3, 5, 5, 5 , 5,  5,  5,   3,   1, -1, -3,  -5, -5, -5,-5,-5,-5]
+        pathX = [0]
+        pathY = [0]
 
-    startupPlot(L1, L2)
+        for i in range(numberOfLoops):
+            pathX.append(radiusSizeChange*(i+1))
+            pathY.append(pathY[len(pathY)-1])
+
+            pathX.append(radiusSizeChange*(i+1))
+            pathY.append(radiusSizeChange*(i+1))
+
+            pathX.append(-radiusSizeChange*(i+1))
+            pathY.append(radiusSizeChange*(i+1))
+
+            pathX.append(-radiusSizeChange*(i+1))
+            pathY.append(-radiusSizeChange*(i+1))
+
+    elif ActivePath == 8:
+
+        u = np.linspace(0, 30 * np.pi, 800)
+        pathX = 1.4*(np.cos(u) + 0.05*u*np.sin(3*u))
+        pathY = 1.4*(np.sin(2*u) + 0.05*u*np.cos(3*u))
+
+    else: #rectangle
+        pathX = [10, 20, 20, 10, 10]
+        pathY = [10, 10, 20, 20, 10]
+
+    startupPlot()
 
 # set up serial comms---------------------------------------------------------------------------------------------------
 ser = serial.Serial('com4', 9600, timeout=10) # create Serial Object, baud = 9600, read times out after 10s
@@ -494,7 +413,7 @@ RightFrame = tk.Frame(master=tkTop, width=600, bg="gray")
 
 
 RightFrame.pack(fill=tk.BOTH, side=tk.LEFT, expand=True)
-startupPlot(L1, L2)
+startupPlot()
 
 # run loop watching for gui interactions
 tk.mainloop()
