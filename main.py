@@ -2,17 +2,19 @@ import serial
 import tkinter as tk
 import time
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
-from matplotlib import pyplot as plt
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
 import numpy as np
 import re
-import math
 
 FileName = r"C:\Users\Ericw\Desktop\topSecretedata.csv"
 
 # calculate the angles using inverse kinematics
 theta0 = [0, 0]
 prevTheta1 = 0
+
+# set up serial comms---------------------------------------------------------------------------------------------------
+ser = serial.Serial('com3', 9600, timeout=10) # create Serial Object, baud = 9600, read times out after 10s
+time.sleep(3)  # delay 3 seconds to allow serial com to get established
 
 
 # generate and plot the graph
@@ -283,9 +285,6 @@ def ChangeSelectPathButton():
     startupPlot()
 
 
-# set up serial comms---------------------------------------------------------------------------------------------------
-ser = serial.Serial('com4', 9600, timeout=10) # create Serial Object, baud = 9600, read times out after 10s
-time.sleep(3)  # delay 3 seconds to allow serial com to get established
 
 # Build GUI------------------------------------------------------------------------------------------------------------
 tkTop = tk.Tk()  # Create GUI Box
