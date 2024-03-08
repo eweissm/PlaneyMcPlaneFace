@@ -13,7 +13,7 @@ theta0 = [0, 0]
 prevTheta1 = 0
 
 # set up serial comms---------------------------------------------------------------------------------------------------
-ser = serial.Serial('com3', 9600, timeout=10) # create Serial Object, baud = 9600, read times out after 10s
+ser = serial.Serial('com4', 9600, timeout=10) # create Serial Object, baud = 9600, read times out after 10s
 time.sleep(3)  # delay 3 seconds to allow serial com to get established
 
 
